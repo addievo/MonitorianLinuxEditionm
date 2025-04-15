@@ -5,11 +5,24 @@ import QtQuick.Layouts 1.15
 Rectangle {
     id: root
     width: parent.width
-    height: 45
-    color: isLinked ? "#f0f7ff" : "#ffffff"
-    radius: 4
-    border.color: isLinked ? "#6bbbff" : "#e0e0e0"
+    height: 52
+    color: isLinked ? "#202C40" : "#20253A"
+    radius: 8
+    border.color: isLinked ? "#60A5FA" : "#40506080"
     border.width: 1
+    opacity: 0.98
+
+    // Glass effect
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: "transparent"
+        opacity: 0.08
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#80ffffff" }
+            GradientStop { position: 1.0; color: "#00ffffff" }
+        }
+    }
 
     property string monitorName: "Unknown Monitor"
     property int brightnessValue: 50
@@ -21,33 +34,34 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 8
-        spacing: 8
+        anchors.margins: 10
+        spacing: 10
 
         // Link button
         Rectangle {
             id: linkButton
-            Layout.preferredWidth: 24
-            Layout.preferredHeight: 24
-            color: linkMouseArea.containsMouse ? "#e6e6e6" : "transparent"
-            radius: 2
-            border.color: linkMouseArea.containsMouse ? "#d0d0d0" : "transparent"
+            Layout.preferredWidth: 26
+            Layout.preferredHeight: 26
+            color: linkMouseArea.containsMouse ? "#30ffffff" : "transparent"
+            radius: 4
+            border.color: isLinked ? "#60A5FA" : "#40808080"
             border.width: 1
 
             Rectangle {
                 anchors.centerIn: parent
                 width: 16
                 height: 16
-                radius: 2
-                color: isLinked ? "#007ACC" : "transparent"
-                border.color: isLinked ? "#007ACC" : "#888888"
-                border.width: 1
+                radius: 3
+                color: isLinked ? "#60A5FA" : "#20ffffff"
+                border.color: isLinked ? "#80C8FF" : "#60808080"
+                border.width: isLinked ? 0 : 1
+                opacity: isLinked ? 1.0 : 0.7
 
                 Text {
                     anchors.centerIn: parent
                     text: "✓"
                     color: "#ffffff"
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     visible: isLinked
                 }
             }
@@ -65,14 +79,14 @@ Rectangle {
         // Monitor info
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 2
+            spacing: 5
 
             // Monitor name
             Text {
                 text: monitorName
-                color: "#303030"
-                font.pixelSize: 11
-                font.bold: true
+                color: "#ffffff"
+                font.pixelSize: 12
+                font.weight: Font.Medium
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
@@ -80,7 +94,7 @@ Rectangle {
             // Brightness slider
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 8
+                spacing: 12
 
                 Slider {
                     id: brightnessSlider
@@ -99,12 +113,12 @@ Rectangle {
                         width: brightnessSlider.availableWidth
                         height: 4
                         radius: 2
-                        color: "#dddddd"
+                        color: "#30404040"
 
                         Rectangle {
                             width: brightnessSlider.visualPosition * parent.width
                             height: parent.height
-                            color: isLinked ? "#007ACC" : "#444444"
+                            color: isLinked ? "#60A5FA" : "#50A0F0"
                             radius: 2
                         }
                     }
@@ -112,21 +126,34 @@ Rectangle {
                     handle: Rectangle {
                         x: brightnessSlider.leftPadding + brightnessSlider.visualPosition * (brightnessSlider.availableWidth - width)
                         y: brightnessSlider.topPadding + brightnessSlider.availableHeight / 2 - height / 2
-                        width: 14
-                        height: 14
-                        radius: 7
-                        color: brightnessSlider.pressed ? "#f0f0f0" : "#ffffff"
-                        border.color: isLinked ? "#007ACC" : "#888888"
+                        width: 16
+                        height: 16
+                        radius: 8
+                        color: brightnessSlider.pressed ? "#F0F0F0" : "#FFFFFF"
+                        border.color: isLinked ? "#60A5FA" : "#50A0F0"
                         border.width: 1
+                        antialiasing: true
 
-                        // Simple shadow using a background rectangle
+                        // Glass effect for handle
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: "transparent"
+                            opacity: 0.2
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "#80ffffff" }
+                                GradientStop { position: 1.0; color: "#00ffffff" }
+                            }
+                        }
+
+                        // Shadow
                         Rectangle {
                             z: -1
                             anchors.centerIn: parent
                             width: parent.width + 2
                             height: parent.height + 2
-                            radius: parent.radius + 1
-                            color: "#20000000"
+                            radius: 9
+                            color: "#30000000"
                             visible: !brightnessSlider.pressed
                         }
                     }
@@ -147,10 +174,10 @@ Rectangle {
                 // Brightness value
                 Text {
                     text: brightnessSlider.pressed ? brightnessSlider.pendingValue : brightnessValue
-                    color: "#303030"
-                    font.pixelSize: 11
-                    font.bold: true
-                    Layout.preferredWidth: 25
+                    color: "#ffffff"
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                    Layout.preferredWidth: 28
                     horizontalAlignment: Text.AlignRight
                 }
             }
