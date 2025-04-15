@@ -8,7 +8,7 @@ Window {
     id: mainWindow
     visible: true
     width: 320
-    height: Math.min(Math.max(150, 48 * monitorManager.monitors.length + 100), 400) * 1.2
+    height: Math.min(Math.max(150, 48 * monitorManager.monitors.length + 100), 400) * 1.15
     title: "Monitor Brightness Control"
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
@@ -17,22 +17,11 @@ Window {
     Rectangle {
         id: shadowRect
         anchors.fill: parent
-        color: "#1A1C24"
-        border.color: "#30000000"
+        color: "#121418"
+        border.color: "#35000000"
         border.width: 1
-        radius: 10
-        opacity: 0.90
-
-        // Add glass-like gradient overlay
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#40ffffff" }
-                GradientStop { position: 1.0; color: "#10ffffff" }
-            }
-            opacity: 0.05
-        }
+        radius: 8
+        opacity: 0.98
     }
 
     // Position window near system tray
@@ -113,16 +102,15 @@ Window {
     // Allow dragging the window
     Rectangle {
         id: titleBar
-        height: 40
+        height: 36
         color: "#0078D7"
-        opacity: 0.95
         anchors {
             top: parent.top
             left: parent.left
             right: parent.right
             margins: 1
         }
-        radius: 9
+        radius: 7
 
         // Only top corners should be rounded
         Rectangle {
@@ -130,33 +118,21 @@ Window {
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
-                bottomMargin: -9
+                bottomMargin: -7
             }
-            height: 10
+            height: 8
             color: parent.color
-            opacity: parent.opacity
-        }
-
-        // Glass effect overlay
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#40ffffff" }
-                GradientStop { position: 1.0; color: "#10ffffff" }
-            }
-            opacity: 0.15
         }
 
         Text {
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
-                leftMargin: 16
+                leftMargin: 12
             }
             text: "Monitor Brightness Control"
             color: "#ffffff"
-            font.pixelSize: 14
+            font.pixelSize: 12
             font.weight: Font.Medium
         }
 
@@ -176,18 +152,17 @@ Window {
         // Close button
         Rectangle {
             id: closeButton
-            width: 40
+            width: 36
             height: parent.height
             color: closeMouseArea.containsMouse ? "#E81123" : "transparent"
             anchors.right: parent.right
             anchors.top: parent.top
-            opacity: closeMouseArea.containsMouse ? 1.0 : 0.9
 
             Text {
                 anchors.centerIn: parent
                 text: "×"
                 color: "#ffffff"
-                font.pixelSize: 20
+                font.pixelSize: 18
             }
 
             MouseArea {
@@ -201,9 +176,9 @@ Window {
         // Minimize button
         Rectangle {
             id: minimizeButton
-            width: 40
+            width: 36
             height: parent.height
-            color: minimizeMouseArea.containsMouse ? "#30ffffff" : "transparent"
+            color: minimizeMouseArea.containsMouse ? "#20ffffff" : "transparent"
             anchors.right: closeButton.left
             anchors.top: parent.top
 
@@ -211,7 +186,7 @@ Window {
                 anchors.centerIn: parent
                 text: "−"
                 color: "#ffffff"
-                font.pixelSize: 20
+                font.pixelSize: 18
             }
 
             MouseArea {
@@ -237,8 +212,7 @@ Window {
         // Inner background with slight blur effect
         Rectangle {
             anchors.fill: parent
-            color: "#16181F"
-            opacity: 0.92
+            color: "#0F1013"
         }
 
         // Monitors list
@@ -284,28 +258,15 @@ Window {
                 Rectangle {
                     anchors.centerIn: parent
                     width: parent.width * 0.9
-                    height: 120
-                    color: "#1A1F30"
-                    opacity: 0.9
-                    radius: 8
-                    border.color: "#304050"
+                    height: 90
+                    color: "#1A1D24"
+                    radius: 4
+                    border.color: "#404652"
                     border.width: 1
-
-                    // Glass effect
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: parent.radius
-                        color: "transparent"
-                        opacity: 0.05
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "#80ffffff" }
-                            GradientStop { position: 1.0; color: "#00ffffff" }
-                        }
-                    }
 
                     Column {
                         anchors.centerIn: parent
-                        spacing: 15
+                        spacing: 10
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -313,7 +274,7 @@ Window {
                                 "No compatible monitors found" :
                                 "ddcutil not available"
                             color: "#ffffff"
-                            font.pixelSize: 14
+                            font.pixelSize: 13
                             font.weight: Font.Medium
                         }
 
@@ -322,8 +283,8 @@ Window {
                             text: monitorManager.ddcUtilAvailable ?
                                 "Connect DDC-compatible monitors" :
                                 "Please install ddcutil and ensure proper permissions"
-                            color: "#cccccc"
-                            font.pixelSize: 12
+                            color: "#aaaaaa"
+                            font.pixelSize: 11
                             width: parent.width - 20
                             wrapMode: Text.WordWrap
                             horizontalAlignment: Text.AlignHCenter
@@ -337,9 +298,8 @@ Window {
     // Status bar
     Rectangle {
         id: statusBar
-        height: 50
-        color: "#16181F"
-        opacity: 0.95
+        height: 45
+        color: "#0F1013"
         anchors {
             left: parent.left
             right: parent.right
@@ -348,7 +308,7 @@ Window {
             rightMargin: 1
             bottomMargin: 1
         }
-        radius: 9
+        radius: 7
 
         // Only bottom corners should be rounded
         Rectangle {
@@ -356,24 +316,10 @@ Window {
                 left: parent.left
                 right: parent.right
                 top: parent.top
-                topMargin: -9
+                topMargin: -7
             }
-            height: 10
+            height: 8
             color: parent.color
-            opacity: parent.opacity
-        }
-
-        // Glass effect
-        Rectangle {
-            anchors.fill: parent
-            anchors.topMargin: -9
-            radius: parent.radius
-            color: "transparent"
-            opacity: 0.05
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#00ffffff" }
-                GradientStop { position: 1.0; color: "#40ffffff" }
-            }
         }
 
         RowLayout {
@@ -386,24 +332,23 @@ Window {
             // Refresh button
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 34
-                Layout.leftMargin: 12
-                Layout.rightMargin: 6
-                color: refreshMouseArea.containsMouse ? "#30ffffff" : "#20ffffff"
-                radius: 6
-                border.color: refreshMouseArea.containsMouse ? "#60A5FA" : "#304050"
+                Layout.preferredHeight: 30
+                Layout.leftMargin: 10
+                Layout.rightMargin: 5
+                color: refreshMouseArea.containsMouse ? "#252830" : "#1A1D24"
+                radius: 4
+                border.color: "#404652"
                 border.width: 1
-                opacity: 0.9
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: 6
 
                     Text {
                         id: refreshIcon
                         text: "⟳"
                         color: "#ffffff"
-                        font.pixelSize: 16
+                        font.pixelSize: 14
                         anchors.verticalCenter: parent.verticalCenter
 
                         // Rotation behavior
@@ -415,8 +360,8 @@ Window {
                     Text {
                         text: "Refresh"
                         color: "#ffffff"
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
@@ -435,29 +380,35 @@ Window {
             // Link/Unlink all button
             Rectangle {
                 id: linkAllButton
-                Layout.preferredWidth: 110
-                Layout.preferredHeight: 34
-                Layout.rightMargin: 12
-                color: isAllLinked() ? "#202C40" : (linkAllMouseArea.containsMouse ? "#30ffffff" : "#20ffffff")
-                radius: 6
-                border.color: isAllLinked() ? "#60A5FA" : "#304050"
+                Layout.preferredWidth: 90
+                Layout.preferredHeight: 30
+                Layout.rightMargin: 10
+                color: isAllLinked() ? "#252830" : "#1A1D24"
+                radius: 4
+                border.color: "#404652"
                 border.width: 1
                 visible: monitorManager.monitors.length > 1
-                opacity: 0.9
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: 6
 
                     Rectangle {
-                        width: 16
-                        height: 16
-                        radius: 3
-                        color: isAllLinked() ? "#60A5FA" : "#20ffffff"
-                        border.color: isAllLinked() ? "#80C8FF" : "#60808080"
-                        border.width: isAllLinked() ? 0 : 1
-                        opacity: isAllLinked() ? 1.0 : 0.7
+                        width: 15
+                        height: 15
+                        radius: 2
+                        color: "transparent"
+                        border.color: isAllLinked() ? "#3498DB" : "#60808080"
+                        border.width: 1
                         anchors.verticalCenter: parent.verticalCenter
+
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: 1
+                            radius: 1.5
+                            color: isAllLinked() ? "#3498DB" : "transparent"
+                            visible: isAllLinked()
+                        }
 
                         Text {
                             anchors.centerIn: parent
@@ -471,8 +422,8 @@ Window {
                     Text {
                         text: isAllLinked() ? "Unlink All" : "Link All"
                         color: "#ffffff"
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }

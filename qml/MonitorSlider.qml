@@ -5,24 +5,10 @@ import QtQuick.Layouts 1.15
 Rectangle {
     id: root
     width: parent.width
-    height: 52
-    color: isLinked ? "#202C40" : "#20253A"
-    radius: 8
-    border.color: isLinked ? "#60A5FA" : "#40506080"
-    border.width: 1
-    opacity: 0.98
-
-    // Glass effect
-    Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        color: "transparent"
-        opacity: 0.08
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#80ffffff" }
-            GradientStop { position: 1.0; color: "#00ffffff" }
-        }
-    }
+    height: 45
+    color: "transparent"
+    radius: 4
+    border.width: 0
 
     property string monitorName: "Unknown Monitor"
     property int brightnessValue: 50
@@ -34,36 +20,33 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 10
+        anchors.margins: 6
+        spacing: 8
 
         // Link button
         Rectangle {
             id: linkButton
-            Layout.preferredWidth: 26
-            Layout.preferredHeight: 26
-            color: linkMouseArea.containsMouse ? "#30ffffff" : "transparent"
-            radius: 4
-            border.color: isLinked ? "#60A5FA" : "#40808080"
+            Layout.preferredWidth: 22
+            Layout.preferredHeight: 22
+            color: "transparent"
+            border.color: isLinked ? "#3498DB" : "#60808080"
             border.width: 1
+            radius: 3
 
             Rectangle {
-                anchors.centerIn: parent
-                width: 16
-                height: 16
-                radius: 3
-                color: isLinked ? "#60A5FA" : "#20ffffff"
-                border.color: isLinked ? "#80C8FF" : "#60808080"
-                border.width: isLinked ? 0 : 1
-                opacity: isLinked ? 1.0 : 0.7
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: 2
+                color: isLinked ? "#3498DB" : "transparent"
+                visible: isLinked
+            }
 
-                Text {
-                    anchors.centerIn: parent
-                    text: "✓"
-                    color: "#ffffff"
-                    font.pixelSize: 11
-                    visible: isLinked
-                }
+            Text {
+                anchors.centerIn: parent
+                text: "✓"
+                color: "#ffffff"
+                font.pixelSize: 10
+                visible: isLinked
             }
 
             MouseArea {
@@ -94,7 +77,7 @@ Rectangle {
             // Brightness slider
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 10
 
                 Slider {
                     id: brightnessSlider
@@ -111,51 +94,25 @@ Rectangle {
                         x: brightnessSlider.leftPadding
                         y: brightnessSlider.topPadding + brightnessSlider.availableHeight / 2 - height / 2
                         width: brightnessSlider.availableWidth
-                        height: 4
-                        radius: 2
-                        color: "#30404040"
+                        height: 2
+                        color: "#40404040"
 
                         Rectangle {
                             width: brightnessSlider.visualPosition * parent.width
                             height: parent.height
-                            color: isLinked ? "#60A5FA" : "#50A0F0"
-                            radius: 2
+                            color: isLinked ? "#3498DB" : "#3498DB"
                         }
                     }
 
                     handle: Rectangle {
                         x: brightnessSlider.leftPadding + brightnessSlider.visualPosition * (brightnessSlider.availableWidth - width)
                         y: brightnessSlider.topPadding + brightnessSlider.availableHeight / 2 - height / 2
-                        width: 16
-                        height: 16
-                        radius: 8
-                        color: brightnessSlider.pressed ? "#F0F0F0" : "#FFFFFF"
-                        border.color: isLinked ? "#60A5FA" : "#50A0F0"
+                        width: 14
+                        height: 14
+                        radius: 7
+                        color: "#FFFFFF"
+                        border.color: isLinked ? "#3498DB" : "#3498DB"
                         border.width: 1
-                        antialiasing: true
-
-                        // Glass effect for handle
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: parent.radius
-                            color: "transparent"
-                            opacity: 0.2
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#80ffffff" }
-                                GradientStop { position: 1.0; color: "#00ffffff" }
-                            }
-                        }
-
-                        // Shadow
-                        Rectangle {
-                            z: -1
-                            anchors.centerIn: parent
-                            width: parent.width + 2
-                            height: parent.height + 2
-                            radius: 9
-                            color: "#30000000"
-                            visible: !brightnessSlider.pressed
-                        }
                     }
 
                     // Update visual value during dragging
@@ -176,7 +133,7 @@ Rectangle {
                     text: brightnessSlider.pressed ? brightnessSlider.pendingValue : brightnessValue
                     color: "#ffffff"
                     font.pixelSize: 13
-                    font.weight: Font.DemiBold
+                    font.weight: Font.Medium
                     Layout.preferredWidth: 28
                     horizontalAlignment: Text.AlignRight
                 }
