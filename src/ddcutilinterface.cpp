@@ -147,13 +147,38 @@ bool DDCUtilInterface::setBrightness(const QString& monitorId, int brightness)
         return false;
     }
 
+    // Clamp brightness to 0-100
     brightness = qBound(0, brightness, 100);
 
-    QStringList args;
-    args << "--bus" << monitorId << "setvcp" << "10" << QString::number(brightness);
-    QString output = executeCommand("ddcutil", args);
+    // Get current brightness before changing
+    int currentBrightness = getBrightness(monitorId);
 
-    return !output.isEmpty();
+    QString output = executeCommand("ddcutil", QStringList()
+                                  << "--bus" << monitorId
+                                  << "setvcp" << "10" << QString::number(brightness));
+
+    // If we can't get the output or the command failed, return false
+    if (output.isEmpty()) {
+        return false;
+    }
+
+    // Verify the change by checking if brightness is now closer to requested value
+    // Some monitors might not set to the exact value we request
+    int newBrightness = getBrightness(monitorId);
+
+    // If we can't read the new brightness, consider it a failure
+    if (newBrightness < 0) {
+        return false;
+    }
+
+    // Consider success if the brightness changed in the right direction
+    // or is now equal to what we requested
+    bool movedInRightDirection =
+        (brightness > currentBrightness && newBrightness > currentBrightness) ||
+        (brightness < currentBrightness && newBrightness < currentBrightness) ||
+        (brightness == newBrightness);
+
+    return movedInRightDirection;
 }
 
 int DDCUtilInterface::getBrightness(const QString& monitorId)
