@@ -4,6 +4,22 @@ set -e
 # Monitor Brightness Control Installation Script
 # This script installs Monitor Brightness Control on Linux systems
 
+# Default verbose mode is off
+VERBOSE=false
+
+# Parse command line arguments
+for arg in "$@"; do
+  case $arg in
+    --verbose)
+      VERBOSE=true
+      shift
+      ;;
+    *)
+      # Unknown option
+      ;;
+  esac
+done
+
 # Display colored text
 print_color() {
     if [ "$2" = "info" ]; then
@@ -21,6 +37,25 @@ print_color() {
     echo -e "\033[${COLOR}$1\033[0m"
 }
 
+# Only print if verbose mode is on
+verbose_print() {
+    if [ "$VERBOSE" = true ]; then
+        print_color "$1" "$2"
+    fi
+}
+
+# Run a command with output handling based on verbose mode
+run_command() {
+    if [ "$VERBOSE" = true ]; then
+        # Show full command output in verbose mode
+        "$@"
+    else
+        # Hide output in normal mode, but still capture exit code
+        "$@" > /dev/null 2>&1
+        return $?
+    fi
+}
+
 # Display banner
 print_banner() {
     echo ""
@@ -28,6 +63,21 @@ print_banner() {
     print_color "       Monitor Brightness Control Installer      " "info"
     print_color "================================================" "info"
     echo ""
+}
+
+# Check for required build tools
+check_build_tools() {
+    print_color "Checking for required build tools..." "info"
+    if ! command -v make &> /dev/null; then
+        print_color "Error: 'make' is not installed." "error"
+        return 1
+    fi
+    if ! command -v g++ &> /dev/null; then
+        print_color "Error: 'g++' is not installed." "error"
+        return 1
+    fi
+    print_color "✓ Build tools found" "success"
+    return 0
 }
 
 # Check system and prerequisites
@@ -41,7 +91,18 @@ check_system() {
     fi
 
     # Check package manager
-    if command -v apt-get &> /dev/null; then
+    if command -v pacman &> /dev/null; then
+        PKG_MANAGER="pacman"
+        if [ -f /etc/manjaro-release ]; then
+            MANJARO=true
+            print_color "Detected Manjaro Linux" "info"
+        elif [ -f /etc/arch-release ]; then
+            ARCH=true
+            print_color "Detected Arch Linux" "info"
+        else
+            print_color "Detected pacman-based distribution" "info"
+        fi
+    elif command -v apt-get &> /dev/null; then
         PKG_MANAGER="apt"
         # Check for Ubuntu/Debian/Mint version
         if [ -f /etc/os-release ]; then
@@ -53,10 +114,10 @@ check_system() {
         fi
     elif command -v dnf &> /dev/null; then
         PKG_MANAGER="dnf"
-    elif command -v pacman &> /dev/null; then
-        PKG_MANAGER="pacman"
+        print_color "Detected Fedora/RHEL-based distribution" "info"
     elif command -v zypper &> /dev/null; then
         PKG_MANAGER="zypper"
+        print_color "Detected OpenSUSE/SUSE distribution" "info"
     else
         print_color "Warning: Unsupported package manager. You'll need to install dependencies manually." "warning"
         PKG_MANAGER="unknown"
@@ -81,15 +142,23 @@ test_qt_installation() {
 
     if command -v qmake &> /dev/null; then
         QMAKE_VERSION=$(qmake --version | head -n 1)
-        print_color "✓ Found $QMAKE_VERSION" "success"
+        verbose_print "✓ Found $QMAKE_VERSION" "success"
+    elif command -v qmake-qt5 &> /dev/null; then
+        QMAKE_VERSION=$(qmake-qt5 --version | head -n 1)
+        verbose_print "✓ Found $QMAKE_VERSION" "success"
     else
         print_color "⚠ qmake not found. Qt might not be properly installed." "warning"
     fi
 
     if [ -d "/usr/include/x86_64-linux-gnu/qt5" ] || [ -d "/usr/include/qt5" ]; then
-        print_color "✓ Qt5 development headers found" "success"
+        verbose_print "✓ Qt5 development headers found" "success"
     else
-        print_color "⚠ Qt5 development headers not found" "warning"
+        verbose_print "⚠ Qt5 development headers not found" "warning"
+    fi
+
+    # Always show a success message in non-verbose mode if Qt is found
+    if [ "$VERBOSE" = false ] && (command -v qmake &> /dev/null || command -v qmake-qt5 &> /dev/null); then
+        print_color "✓ Qt installation found" "success"
     fi
 }
 
@@ -98,30 +167,69 @@ install_dependencies() {
     print_color "➤ Installing dependencies..." "info"
 
     case $PKG_MANAGER in
+        pacman)
+            if [ "$MANJARO" = true ] || [ "$ARCH" = true ]; then
+                print_color "Installing dependencies for Manjaro/Arch..." "info"
+                if [ "$VERBOSE" = true ]; then
+                    sudo pacman -Sy --noconfirm git cmake gcc base-devel make qt5-base qt5-declarative qt5-quickcontrols qt5-quickcontrols2 qt5-svg qt5-x11extras ddcutil
+                else
+                    print_color "Installing packages (this may take a while)..." "info"
+                    sudo pacman -Sy --noconfirm git cmake gcc base-devel make qt5-base qt5-declarative qt5-quickcontrols qt5-quickcontrols2 qt5-svg qt5-x11extras ddcutil > /dev/null 2>&1
+                fi
+            else
+                if [ "$VERBOSE" = true ]; then
+                    sudo pacman -Sy --noconfirm git cmake gcc qt5-base qt5-declarative qt5-quickcontrols2 qt5-svg ddcutil
+                else
+                    print_color "Installing packages (this may take a while)..." "info"
+                    sudo pacman -Sy --noconfirm git cmake gcc qt5-base qt5-declarative qt5-quickcontrols2 qt5-svg ddcutil > /dev/null 2>&1
+                fi
+            fi
+            ;;
         apt)
-            sudo apt-get update
+            if [ "$VERBOSE" = true ]; then
+                sudo apt-get update
+            else
+                print_color "Updating package lists..." "info"
+                sudo apt-get update > /dev/null 2>&1
+            fi
 
             # Modern Ubuntu/Mint/Debian doesn't use qt5-default anymore
             QT_PACKAGES="qtbase5-dev qtdeclarative5-dev libqt5svg5-dev"
             QML_PACKAGES="qml-module-qtquick2 qml-module-qtquick-window2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qt-labs-platform qml-module-qtquick-dialogs"
 
-            sudo apt-get install -y git cmake g++ $QT_PACKAGES $QML_PACKAGES ddcutil
+            if [ "$VERBOSE" = true ]; then
+                sudo apt-get install -y git cmake g++ $QT_PACKAGES $QML_PACKAGES ddcutil
 
-            # Check if installation was successful
-            if [ $? -ne 0 ]; then
-                print_color "Warning: Some packages failed to install. Trying alternative approach..." "warning"
-                # Try with qt5-default for older distributions
-                sudo apt-get install -y qt5-default 2>/dev/null || true
+                # Check if installation was successful
+                if [ $? -ne 0 ]; then
+                    print_color "Warning: Some packages failed to install. Trying alternative approach..." "warning"
+                    # Try with qt5-default for older distributions
+                    sudo apt-get install -y qt5-default 2>/dev/null || true
+                fi
+            else
+                print_color "Installing packages (this may take a while)..." "info"
+                if ! sudo apt-get install -y git cmake g++ $QT_PACKAGES $QML_PACKAGES ddcutil > /dev/null 2>&1; then
+                    print_color "Warning: Some packages failed to install. Trying alternative approach..." "warning"
+                    # Try with qt5-default for older distributions
+                    sudo apt-get install -y qt5-default > /dev/null 2>&1 || true
+                fi
             fi
             ;;
         dnf)
-            sudo dnf install -y git cmake gcc-c++ qt5-qtbase-devel qt5-qtdeclarative-devel qt5-qtquickcontrols2-devel qt5-qtsvg-devel ddcutil
-            ;;
-        pacman)
-            sudo pacman -Sy --noconfirm git cmake gcc qt5-base qt5-declarative qt5-quickcontrols2 qt5-svg ddcutil
+            if [ "$VERBOSE" = true ]; then
+                sudo dnf install -y git cmake gcc-c++ qt5-qtbase-devel qt5-qtdeclarative-devel qt5-qtquickcontrols2-devel qt5-qtsvg-devel ddcutil
+            else
+                print_color "Installing packages (this may take a while)..." "info"
+                sudo dnf install -y git cmake gcc-c++ qt5-qtbase-devel qt5-qtdeclarative-devel qt5-qtquickcontrols2-devel qt5-qtsvg-devel ddcutil > /dev/null 2>&1
+            fi
             ;;
         zypper)
-            sudo zypper install -y git cmake gcc-c++ libqt5-qtbase-devel libqt5-qtdeclarative-devel libqt5-qtquickcontrols2-devel libQt5Svg5-devel ddcutil
+            if [ "$VERBOSE" = true ]; then
+                sudo zypper install -y git cmake gcc-c++ libqt5-qtbase-devel libqt5-qtdeclarative-devel libqt5-qtquickcontrols2-devel libQt5Svg5-devel ddcutil
+            else
+                print_color "Installing packages (this may take a while)..." "info"
+                sudo zypper install -y git cmake gcc-c++ libqt5-qtbase-devel libqt5-qtdeclarative-devel libqt5-qtquickcontrols2-devel libQt5Svg5-devel ddcutil > /dev/null 2>&1
+            fi
             ;;
         *)
             print_color "Please install the following dependencies manually:" "warning"
@@ -133,6 +241,9 @@ install_dependencies() {
             read -p "Press Enter to continue once dependencies are installed..."
             ;;
     esac
+
+    # Verify build tools after installation
+    check_build_tools
 
     test_qt_installation
 
@@ -171,21 +282,28 @@ test_ddcutil() {
         print_color "✓ Current user is in the i2c group" "success"
     else
         print_color "⚠ Current user is NOT in the i2c group yet (logout and login required)" "warning"
+        # Note that we continue here rather than exiting
     fi
 
-    # Try to detect monitors
-    MONITOR_OUTPUT=$(ddcutil detect 2>&1)
-    if echo "$MONITOR_OUTPUT" | grep -q "No displays found"; then
-        print_color "⚠ No DDC-compatible monitors detected" "warning"
-        print_color "This could be due to:" "info"
-        print_color "  - Permission issues (logout and login to apply group changes)" "info"
-        print_color "  - Your monitor doesn't support DDC/CI (check monitor settings)" "info"
-        print_color "  - Hardware limitations (some GPUs/cables don't support DDC properly)" "info"
-    else
-        MONITOR_COUNT=$(echo "$MONITOR_OUTPUT" | grep -c "Display")
-        if [ "$MONITOR_COUNT" -gt 0 ]; then
-            print_color "✓ Detected $MONITOR_COUNT DDC-compatible monitor(s)" "success"
+    # Try to detect monitors - only in verbose mode or if we have i2c group
+    if [ "$VERBOSE" = true ] || groups | grep -q "\bi2c\b"; then
+        verbose_print "Running ddcutil detect..." "info"
+        MONITOR_OUTPUT=$(ddcutil detect 2>&1)
+        if echo "$MONITOR_OUTPUT" | grep -q "No displays found"; then
+            print_color "⚠ No DDC-compatible monitors detected" "warning"
+            verbose_print "This could be due to:" "info"
+            verbose_print "  - Permission issues (logout and login to apply group changes)" "info"
+            verbose_print "  - Your monitor doesn't support DDC/CI (check monitor settings)" "info"
+            verbose_print "  - Hardware limitations (some GPUs/cables don't support DDC properly)" "info"
+        else
+            MONITOR_COUNT=$(echo "$MONITOR_OUTPUT" | grep -c "Display")
+            if [ "$MONITOR_COUNT" -gt 0 ]; then
+                print_color "✓ Detected $MONITOR_COUNT DDC-compatible monitor(s)" "success"
+            fi
         fi
+    else
+        print_color "Monitor detection skipped until i2c permissions are applied" "info"
+        print_color "Please log out and log back in, then run the application" "info"
     fi
 }
 
@@ -214,38 +332,107 @@ build_application() {
     mkdir -p build
     cd build
 
-    # Capture cmake output to diagnose issues
-    CMAKE_OUTPUT=$(cmake .. 2>&1)
-    if [ $? -ne 0 ]; then
-        print_color "Error during CMake configuration:" "error"
-        print_color "$CMAKE_OUTPUT" "error"
-        print_color "Trying to fix Qt detection issues..." "warning"
+    # Special handling for Manjaro/Arch systems
+    if [ "$MANJARO" = true ] || [ "$ARCH" = true ]; then
+        # Use qmake-qt5 if available to ensure Qt5 is used
+        if command -v qmake-qt5 &> /dev/null; then
+            QMAKE_PATH=$(which qmake-qt5)
+            verbose_print "Using qmake-qt5 at $QMAKE_PATH" "info"
 
-        # If cmake failed, try to manually specify Qt path
-        QT_PATH=$(qtchooser -print-env | grep QT_SELECT | cut -d= -f2 | tr -d \")
-        if [ -n "$QT_PATH" ]; then
-            print_color "Trying with Qt path: $QT_PATH" "info"
-            cmake .. -DQT_QMAKE_EXECUTABLE=$(which qmake)
-        else
-            # Last resort: try to find Qt manually
-            QMAKE_PATH=$(find /usr -name qmake-qt5 -o -name qmake 2>/dev/null | head -n 1)
-            if [ -n "$QMAKE_PATH" ]; then
-                print_color "Trying with qmake found at: $QMAKE_PATH" "info"
-                cmake .. -DQT_QMAKE_EXECUTABLE=$QMAKE_PATH
+            if [ "$VERBOSE" = true ]; then
+                cmake .. -DQT_QMAKE_EXECUTABLE="$QMAKE_PATH" 2>&1 | tee cmake_output.txt
             else
-                print_color "Could not find Qt installation. Build may fail." "error"
-                cmake ..
+                print_color "Configuring build..." "info"
+                cmake .. -DQT_QMAKE_EXECUTABLE="$QMAKE_PATH" > cmake_output.txt 2>&1
+            fi
+        else
+            # Regular build path
+            verbose_print "Using default qmake" "info"
+
+            if [ "$VERBOSE" = true ]; then
+                cmake .. 2>&1 | tee cmake_output.txt
+            else
+                print_color "Configuring build..." "info"
+                cmake .. > cmake_output.txt 2>&1
+            fi
+        fi
+    else
+        verbose_print "Configuring build with cmake..." "info"
+
+        if [ "$VERBOSE" = true ]; then
+            # Capture cmake output to diagnose issues in verbose mode
+            CMAKE_OUTPUT=$(cmake .. 2>&1)
+            if [ $? -ne 0 ]; then
+                print_color "Error during CMake configuration:" "error"
+                print_color "$CMAKE_OUTPUT" "error"
+                print_color "Trying to fix Qt detection issues..." "warning"
+
+                # If cmake failed, try to manually specify Qt path
+                QT_PATH=$(qtchooser -print-env | grep QT_SELECT | cut -d= -f2 | tr -d \")
+                if [ -n "$QT_PATH" ]; then
+                    print_color "Trying with Qt path: $QT_PATH" "info"
+                    cmake .. -DQT_QMAKE_EXECUTABLE=$(which qmake)
+                else
+                    # Last resort: try to find Qt manually
+                    QMAKE_PATH=$(find /usr -name qmake-qt5 -o -name qmake 2>/dev/null | head -n 1)
+                    if [ -n "$QMAKE_PATH" ]; then
+                        print_color "Trying with qmake found at: $QMAKE_PATH" "info"
+                        cmake .. -DQT_QMAKE_EXECUTABLE=$QMAKE_PATH
+                    else
+                        print_color "Could not find Qt installation. Build may fail." "error"
+                        cmake ..
+                    fi
+                fi
+            fi
+        else
+            # Silent mode - just show basic status
+            print_color "Configuring build..." "info"
+
+            if ! cmake .. > cmake_output.txt 2>&1; then
+                print_color "Error during CMake configuration, trying alternative approach..." "warning"
+
+                # Try with qmake if initial cmake failed
+                QMAKE_PATH=$(find /usr -name qmake-qt5 -o -name qmake 2>/dev/null | head -n 1)
+                if [ -n "$QMAKE_PATH" ]; then
+                    cmake .. -DQT_QMAKE_EXECUTABLE=$QMAKE_PATH >> cmake_output.txt 2>&1
+                else
+                    # Last attempt without special options
+                    cmake .. >> cmake_output.txt 2>&1
+                fi
             fi
         fi
     fi
 
-    make -j$(nproc)
+    # Check if Makefile was generated
+    if [ ! -f "Makefile" ]; then
+        print_color "Error: CMake failed to generate Makefile." "error"
+        if [ -f "cmake_output.txt" ]; then
+            print_color "Check cmake_output.txt for details." "error"
+        fi
+        exit 1
+    fi
 
-    if [ $? -eq 0 ] && [ -f "monitor-control" ]; then
+    # Build with all available CPU cores
+    print_color "Compiling (this may take a while)..." "info"
+
+    if [ "$VERBOSE" = true ]; then
+        make -j$(nproc) 2>&1 | tee make_output.txt
+    else
+        make -j$(nproc) > make_output.txt 2>&1
+    fi
+
+    BUILD_RESULT=$?
+
+    if [ $BUILD_RESULT -eq 0 ] && [ -f "monitor-control" ]; then
         print_color "✓ Build complete" "success"
     else
         print_color "⚠ Build failed or executable not found" "error"
-        print_color "Please check the error messages above for more details" "error"
+        if [ -f "make_output.txt" ]; then
+            print_color "Please check make_output.txt for details" "error"
+        else
+            print_color "Please check the error messages above for more details" "error"
+        fi
+        exit 1
     fi
 }
 
@@ -308,8 +495,31 @@ finalize_installation() {
     print_color "" "info"
 }
 
+# Display help message
+show_help() {
+    echo "Monitor Brightness Control Installer"
+    echo ""
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --verbose    Show detailed output during installation"
+    echo "  --help       Display this help message and exit"
+    echo ""
+    echo "Example:"
+    echo "  $0 --verbose"
+    echo ""
+}
+
 # Run all steps
 main() {
+    # Check for help flag
+    for arg in "$@"; do
+        if [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+            show_help
+            exit 0
+        fi
+    done
+
     # Ensure script is not run as root
     if [ "$EUID" -eq 0 ]; then
         print_color "Please do not run this script as root or with sudo." "error"
@@ -317,6 +527,12 @@ main() {
     fi
 
     print_banner
+
+    # Show verbose mode status
+    if [ "$VERBOSE" = true ]; then
+        print_color "Verbose mode: ON" "info"
+    fi
+
     check_system
     install_dependencies
     setup_permissions
@@ -326,5 +542,5 @@ main() {
     finalize_installation
 }
 
-# Start installation
-main
+# Start installation with all arguments
+main "$@"
