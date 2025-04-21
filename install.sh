@@ -78,14 +78,14 @@ check_system() {
 # Test Qt installation
 test_qt_installation() {
     print_color "➤ Testing Qt installation..." "info"
-
+    
     if command -v qmake &> /dev/null; then
         QMAKE_VERSION=$(qmake --version | head -n 1)
         print_color "✓ Found $QMAKE_VERSION" "success"
     else
         print_color "⚠ qmake not found. Qt might not be properly installed." "warning"
     fi
-
+    
     if [ -d "/usr/include/x86_64-linux-gnu/qt5" ] || [ -d "/usr/include/qt5" ]; then
         print_color "✓ Qt5 development headers found" "success"
     else
@@ -100,13 +100,13 @@ install_dependencies() {
     case $PKG_MANAGER in
         apt)
             sudo apt-get update
-
+            
             # Modern Ubuntu/Mint/Debian doesn't use qt5-default anymore
             QT_PACKAGES="qtbase5-dev qtdeclarative5-dev libqt5svg5-dev"
             QML_PACKAGES="qml-module-qtquick2 qml-module-qtquick-window2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qt-labs-platform qml-module-qtquick-dialogs"
-
+            
             sudo apt-get install -y git cmake g++ $QT_PACKAGES $QML_PACKAGES ddcutil
-
+            
             # Check if installation was successful
             if [ $? -ne 0 ]; then
                 print_color "Warning: Some packages failed to install. Trying alternative approach..." "warning"
@@ -165,14 +165,14 @@ setup_permissions() {
 # Test ddcutil detection
 test_ddcutil() {
     print_color "➤ Testing ddcutil monitor detection..." "info"
-
+    
     # Check if we have i2c permissions
     if groups | grep -q "\bi2c\b"; then
         print_color "✓ Current user is in the i2c group" "success"
     else
         print_color "⚠ Current user is NOT in the i2c group yet (logout and login required)" "warning"
     fi
-
+    
     # Try to detect monitors
     MONITOR_OUTPUT=$(ddcutil detect 2>&1)
     if echo "$MONITOR_OUTPUT" | grep -q "No displays found"; then
@@ -213,14 +213,14 @@ build_application() {
     cd "$INSTALL_DIR"
     mkdir -p build
     cd build
-
+    
     # Capture cmake output to diagnose issues
     CMAKE_OUTPUT=$(cmake .. 2>&1)
     if [ $? -ne 0 ]; then
         print_color "Error during CMake configuration:" "error"
         print_color "$CMAKE_OUTPUT" "error"
         print_color "Trying to fix Qt detection issues..." "warning"
-
+        
         # If cmake failed, try to manually specify Qt path
         QT_PATH=$(qtchooser -print-env | grep QT_SELECT | cut -d= -f2 | tr -d \")
         if [ -n "$QT_PATH" ]; then
@@ -238,9 +238,9 @@ build_application() {
             fi
         fi
     fi
-
+    
     make -j$(nproc)
-
+    
     if [ $? -eq 0 ] && [ -f "monitor-control" ]; then
         print_color "✓ Build complete" "success"
     else
@@ -278,14 +278,14 @@ EOF
 # Complete installation
 finalize_installation() {
     print_color "➤ Finalizing installation..." "info"
-
+    
     # Test if the application was built successfully
     if [ -f "$INSTALL_DIR/build/monitor-control" ]; then
         print_color "✓ Application binary found at: $INSTALL_DIR/build/monitor-control" "success"
     else
         print_color "⚠ Application binary not found. Installation may have failed." "warning"
     fi
-
+    
     # Test ddcutil again after setup
     test_ddcutil
 
