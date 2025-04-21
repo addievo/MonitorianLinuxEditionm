@@ -120,7 +120,7 @@ clone_repository() {
     mkdir -p "$INSTALL_DIR"
 
     if [ ! -d "$INSTALL_DIR/.git" ]; then
-        git clone https://github.com/addievo/monitor-control.git "$INSTALL_DIR"
+        git clone https://github.com/addievo/MonitorianLinuxEditionm.git "$INSTALL_DIR"
     else
         cd "$INSTALL_DIR" && git pull
     fi
